@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name            FriendsKit
 // @namespace       https://github.com/yuzulabo
-// @version         0.1.1
+// @version         0.1.2
 // @description     friends.nico の独自機能を再現するユーザスクリプト
 // @author          nzws
 // @match           https://knzk.me/*
@@ -214,7 +214,7 @@ window.onload = async () => {
 
         css += `
 .fa-star {
-background-image: url('${i}');
+background-image: url('${ig}');
 width: 16px;
 height: 16px;
 background-size: cover;
@@ -223,7 +223,7 @@ background-position: center center;
 }
 
 .active .fa-star, .notification__message .fa-star {
-background-image: url('${ig}');
+background-image: url('${i}');
 }
 
 .fa-star:before {
