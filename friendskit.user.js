@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name            FriendsKit
 // @namespace       https://github.com/yuzulabo
-// @version         0.1.2
+// @version         0.2.0
 // @description     friends.nico の独自機能を再現するユーザスクリプト
 // @author          nzws
 // @match           https://knzk.me/*
@@ -208,13 +208,15 @@ function at_pizza() {
 let css = ``;
 
 window.onload = async () => {
-    if (F.conf.fav_icon && F.conf.fav_icon_gray) {
-        const i = await getImage(F.conf.fav_icon);
-        const ig = await getImage(F.conf.fav_icon_gray);
+    if (!F.conf.fav_icon_default_force) {
+        const i = F.conf.fav_icon ? await getImage(F.conf.fav_icon) : '';
+        const ig = F.conf.fav_icon_gray ? await getImage(F.conf.fav_icon_gray) : '';
+
+        const char = F.conf.fav_icon_char ? F.conf.fav_icon_char : null;
 
         css += `
 .fa-star {
-background-image: url('${ig}');
+background-image: ${char || !ig ? `none` : `url('${ig}')`};
 width: 16px;
 height: 16px;
 background-size: cover;
@@ -222,14 +224,26 @@ background-repeat: no-repeat;
 background-position: center center;
 }
 
+.fa-star:before {
+content: '${char ? char : (ig ? '' : '\\f005')}';
+}
+
+.active .fa-star, .notification__message .fa-star {
+background-image: ${char || !i ? `none` : `url('${i}')`};
+}
+
+.active .fa-star:before, .notification__message .fa-star:before {
+content: '${char ? char : (i ? '' : '\\f005')}';
+}
+`;
+
+        if (i && !char) {
+            css += `
 .active .fa-star, .notification__message .fa-star {
 background-image: url('${i}');
 }
-
-.fa-star:before {
-content: '';
-}
 `;
+        }
     }
 
     if (!F.conf.no_fav_icon_big) {
