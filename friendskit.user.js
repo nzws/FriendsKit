@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name            FriendsKit
 // @namespace       https://github.com/yuzulabo
-// @version         1.0.0
+// @version         1.0.1
 // @description     friends.nico の独自機能を再現するユーザスクリプト
 // @author          nzws
 // @match           https://knzk.me/*
@@ -23,7 +23,7 @@ const F = {
     regExps: [],
 };
 const api = F.conf.api_server ? F.conf.api_server : 'https://friendskit.nzws.me/api/';
-const user_emoji_regexp = new RegExp(':_([A-Za-z0-9_@.]+):', 'gm');
+const user_emoji_regexp = new RegExp(':(_|@)([A-Za-z0-9_@.]+):', 'gm');
 const shorten_regexp = new RegExp('(sm|nm|im|sg|mg|bk|lv|co|ch|ar|ap|jk|nw|l\/|dic\/|user\/|mylist\/)([0-9]+)', 'gm');
 F.conf.keyword.forEach(word => {
     F.regExps.push({
