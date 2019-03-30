@@ -275,6 +275,7 @@ margin-right: 40px;
 position: absolute;
 top: 20px;
 right: 10px;
+z-index: 999999;
 }
 
 .status .fa-star {
