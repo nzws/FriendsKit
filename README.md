@@ -1,6 +1,6 @@
 # FriendsKit
 
-friends.nico の独自機能を再現するユーザスクリプトです。
+friends.nico の独自機能を再現するユーザスクリプトです。 **開発中です。**
 
 - [x] お気に入りアイコン変更
 - [x] お気に入りアイコン拡大モード
@@ -12,6 +12,8 @@ friends.nico の独自機能を再現するユーザスクリプトです。
 ## インストール
 
 [Tampermonkey](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo?hl=ja) をインストールして、下記のリンクからFriendsKitをインストールしてください。
+
+https://greasyfork.org/ja/scripts/381132-friendskit
 
 ## 使い方とか
 
