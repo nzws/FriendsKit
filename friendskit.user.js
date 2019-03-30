@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name            FriendsKit
 // @namespace       https://github.com/yuzulabo
-// @version         1.0.1
+// @version         1.0.2
 // @description     friends.nico の独自機能を再現するユーザスクリプト
 // @author          nzws
 // @match           https://knzk.me/*
