@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name            FriendsKit
 // @namespace       https://github.com/yuzulabo
-// @version         0.1.0
+// @version         0.1.1
 // @description     friends.nico の独自機能を再現するユーザスクリプト
 // @author          nzws
 // @match           https://knzk.me/*
@@ -207,7 +207,7 @@ function at_pizza() {
 
 let css = ``;
 
-(async () => {
+window.onload = async () => {
     if (F.conf.fav_icon && F.conf.fav_icon_gray) {
         const i = await getImage(F.conf.fav_icon);
         const ig = await getImage(F.conf.fav_icon_gray);
@@ -232,7 +232,7 @@ content: '';
 `;
     }
 
-    if (F.conf.fav_icon_big) {
+    if (!F.conf.no_fav_icon_big) {
         css += `
 .status__info, .status__content {
 margin-right: 40px;
@@ -259,6 +259,8 @@ font-size: 2em;
 
     observer.observe(mainElem, { childList: true, subtree: true });
 
-    const bt = document.querySelector('.compose-form__publish-button-wrapper button');
-    if (bt) bt.addEventListener('click', at_pizza, false);
-})();
+    document.querySelector('.compose-form__publish-button-wrapper button').addEventListener('click', at_pizza, false);
+    document.querySelector('.autosuggest-textarea__textarea').onkeydown = (e) => {
+        if (e.keyCode === 13 && (e.ctrlKey || e.metaKey)) at_pizza();
+    };
+};

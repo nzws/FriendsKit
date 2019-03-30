@@ -74,11 +74,11 @@ friendskit.changeSettings('fav_icon');
 friendskit.changeSettings('fav_icon_gray');
 
 
-// お気に入りアイコン拡大モードを有効にする
-friendskit.changeSettings('fav_icon_big', 1);
-
 // お気に入りアイコン拡大モードを無効にする
-friendskit.changeSettings('fav_icon_big');
+friendskit.changeSettings('no_fav_icon_big', 1);
+
+// お気に入りアイコン拡大モードを有効にする
+friendskit.changeSettings('no_fav_icon_big');
 
 
 // 補助サーバを変更
