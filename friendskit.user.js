@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name            FriendsKit
 // @namespace       https://github.com/yuzulabo
-// @version         0.2.0
+// @version         1.0.0
 // @description     friends.nico の独自機能を再現するユーザスクリプト
 // @author          nzws
 // @match           https://knzk.me/*
@@ -24,6 +24,7 @@ const F = {
 };
 const api = F.conf.api_server ? F.conf.api_server : 'https://friendskit.nzws.me/api/';
 const user_emoji_regexp = new RegExp(':_([A-Za-z0-9_@.]+):', 'gm');
+const shorten_regexp = new RegExp('(sm|nm|im|sg|mg|bk|lv|co|ch|ar|ap|jk|nw|l\/|dic\/|user\/|mylist\/)([0-9]+)', 'gm');
 F.conf.keyword.forEach(word => {
     F.regExps.push({
         word: word,
@@ -55,30 +56,39 @@ const observer = new MutationObserver((mutations) => {
                     domain = '@' + origin_acct.split('@')[1];
                 }
 
+                replaceTool(status, ue_found, domain);
+            } else {
+                replaceTool(status);
+            }
+        });
+    });
+});
+
+function replaceTool(status, ue_found, domain) {
+    if (status.hasChildNodes()) {
+        for (let node of status.childNodes) {
+            replaceTool(node, ue_found, domain);
+        }
+    } else {
+        if (status.nodeName === '#text') {
+            const html = document.createElement('span');
+            html.innerHTML = status.data;
+
+            if (ue_found) {
                 ue_found.forEach(async data => {
                     let acct = data.slice(2).slice(0, -1);
                     if (acct.indexOf('@') === -1) acct += domain;
 
                     const image = await getIconUrl(acct);
-                    const regExp = new RegExp(data, 'gm');
-                    status.innerHTML = status.innerHTML.replace(regExp, `<img src="${image}" class="emojione"/>`);
+                    html.innerHTML = html.innerHTML.replace(new RegExp(data, 'gm'), `<img src="${image}" class="emojione"/>`);
                 });
             }
 
-            F.regExps.forEach(regexp => replaceHighlight(regexp, status));
-        });
-    });
-});
+            F.regExps.forEach(regexp => {
+                html.innerHTML = html.innerHTML.replace(regexp.regexp, `<span style='color: orange'>${regexp.word}</span>`);
+            });
+            html.innerHTML = html.innerHTML.replace(shorten_regexp, `<a href="http://nico.ms/$1$2" target="_blank" rel=”nofollow”>$1$2</a>`);
 
-function replaceHighlight(regexp, status) {
-    if (status.hasChildNodes()) {
-        for (let node of status.childNodes) {
-            replaceHighlight(regexp, node);
-        }
-    } else {
-        if (status.nodeName === '#text') {
-            const html = document.createElement('span');
-            html.innerHTML = status.data.replace(regexp.regexp, `<span style='color: orange'>${regexp.word}</span>`);
             status.parentNode.replaceChild(html, status);
         }
     }
@@ -200,17 +210,26 @@ function at_pizza() {
     const textarea = document.querySelector('.autosuggest-textarea__textarea');
     if (!textarea) return;
 
-    if (textarea.value.indexOf('@ピザ') !== -1) {
+    if (textarea.value.match(/[@|＠]ピザ/)) {
         window.open('https://www.google.com/search?q=近くのピザ屋さん');
     }
+
+    if (textarea.value.match(/[@|＠]ハローワーク/)) {
+        window.open('https://www.hellowork.go.jp/');
+    }
 }
+
+const mainElem = document.getElementById('mastodon');
+if (!mainElem) return;
+
+observer.observe(mainElem, { childList: true, subtree: true });
 
 let css = ``;
 
 window.onload = async () => {
     if (!F.conf.fav_icon_default_force) {
-        const i = F.conf.fav_icon ? await getImage(F.conf.fav_icon) : '';
-        const ig = F.conf.fav_icon_gray ? await getImage(F.conf.fav_icon_gray) : '';
+        const i = F.conf.fav_icon ? await getImage(F.conf.fav_icon) : 'https://media.knzk.me/media_attachments/files/004/510/885/original/caf4ce0b3e7bd6d3.png';
+        const ig = F.conf.fav_icon_gray ? await getImage(F.conf.fav_icon_gray) : 'https://media.knzk.me/media_attachments/files/004/510/887/original/bfb5e4222a3423fd.png';
 
         const char = F.conf.fav_icon_char ? F.conf.fav_icon_char : null;
 
@@ -267,11 +286,6 @@ font-size: 2em;
     }
 
     GM_addStyle(css);
-
-    const mainElem = document.getElementById('mastodon');
-    if (!mainElem) return;
-
-    observer.observe(mainElem, { childList: true, subtree: true });
 
     document.querySelector('.compose-form__publish-button-wrapper button').addEventListener('click', at_pizza, false);
     document.querySelector('.autosuggest-textarea__textarea').onkeydown = (e) => {
