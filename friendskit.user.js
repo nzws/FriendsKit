@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name            FriendsKit
 // @namespace       https://github.com/yuzulabo
-// @version         0.0.1
+// @version         0.1.0
 // @description     friends.nico の独自機能を再現するユーザスクリプト
 // @author          nzws
 // @match           https://knzk.me/*
@@ -22,7 +22,8 @@ const F = {
     iconcache: {},
     regExps: [],
 };
-const user_emoji_regexp = new RegExp(':@([A-Za-z0-9_@.]+):', 'gm');
+const api = F.conf.api_server ? F.conf.api_server : 'https://friendskit.nzws.me/api/';
+const user_emoji_regexp = new RegExp(':_([A-Za-z0-9_@.]+):', 'gm');
 F.conf.keyword.forEach(word => {
     F.regExps.push({
         word: word,
@@ -38,16 +39,31 @@ const observer = new MutationObserver((mutations) => {
             if (!status) return;
 
             const ue_found = status.innerHTML.match(user_emoji_regexp);
-            /*
             if (ue_found) {
+                let domain = '';
+
+                const status_display_name = node.querySelector('.status__display-name');
+                if (status_display_name) {
+                    const origin_acct = status_display_name.title;
+                    if (origin_acct.indexOf('@') !== -1) {
+                        domain = '@' + origin_acct.split('@')[1];
+                    } else {
+                        domain = '@' + location.hostname;
+                    }
+                } else {
+                    const origin_acct = node.querySelector('.display-name__account').textContent.slice(1);
+                    domain = '@' + origin_acct.split('@')[1];
+                }
+
                 ue_found.forEach(async data => {
-                    const acct = data.slice(2).slice(0, -1);
+                    let acct = data.slice(2).slice(0, -1);
+                    if (acct.indexOf('@') === -1) acct += domain;
+
                     const image = await getIconUrl(acct);
                     const regExp = new RegExp(data, 'gm');
                     status.innerHTML = status.innerHTML.replace(regExp, `<img src="${image}" class="emojione"/>`);
                 });
             }
-            */
 
             F.regExps.forEach(regexp => replaceHighlight(regexp, status));
         });
@@ -111,8 +127,8 @@ const friendskit = {
         console.log('[FriendsKit]', 'Done✨\nクリップボードにコピーしたコードをインポートしたいページの Console にそのまま打ち込んでください。');
     },
     resetSettings: () => {
-      delete localStorage.friendskit;
-      return !localStorage.friendskit;
+        delete localStorage.friendskit;
+        return !localStorage.friendskit;
     },
     importSettings: (data) => {
         try {
@@ -150,9 +166,9 @@ async function getIconUrl(acct) {
         }
 
         GM_xmlhttpRequest({
-            method: 'GET',
+            method: 'POST',
             responseType: 'json',
-            url: F.conf.user_emoji_baseurl ? F.conf.user_emoji_baseurl : ('https://friendskit.nzws.me/get_icon?acct=' + acct),
+            url: api + 'get_icon.php?acct=' + acct,
             onerror: () => {
                 console.warn('[FriendsKit]', 'json取得に失敗', acct);
                 return;
@@ -160,6 +176,11 @@ async function getIconUrl(acct) {
             onload: (response) => {
                 if (response.status !== 200) {
                     console.warn('[FriendsKit]', `json取得に失敗 ${response.status}`, acct);
+                    return;
+                }
+
+                if (response.response.error) {
+                    console.warn('[FriendsKit]', response.response.error);
                     return;
                 }
 
