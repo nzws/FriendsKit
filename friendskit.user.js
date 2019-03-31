@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name            FriendsKit
 // @namespace       https://github.com/yuzulabo
-// @version         1.2.1
+// @version         1.2.2
 // @description     friends.nico の独自機能を再現するユーザスクリプト
 // @author          nzws
 // @match           https://knzk.me/*
@@ -20,18 +20,20 @@ const F = {
         keyword: []
     },
     imgcache: {},
-    iconcache: {},
-    regExps: [],
+    iconcache: {}
 };
 const api = F.conf.api_server ? F.conf.api_server : 'https://friendskit.nzws.me/api/';
 const user_emoji_regexp = new RegExp(':(_|@)([A-Za-z0-9_@.]+):', 'gm');
 const shorten_regexp = new RegExp('(sm|nm|im|sg|mg|bk|lv|co|ch|ar|ap|jk|nw|l\/|dic\/|user\/|mylist\/)([0-9]+)', 'gm');
-F.conf.keyword.forEach(word => {
-    F.regExps.push({
-        word: word,
-        regexp: new RegExp(word, 'gim')
+
+const keyword_escaped = [];
+F.conf.keyword.forEach(value => {
+    ['\\', '^', '$', '*', '+', '?', '.', '(', ')', '|', '{', '}', '[', ']'].forEach(meta => {
+        value = value.replace(meta, '\\' + meta);
     });
+    keyword_escaped.push(value);
 });
+const keyword_regexp = new RegExp(`(${keyword_escaped.join('|')})`, 'gim');
 
 const observer = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
@@ -61,46 +63,48 @@ function runner(node) {
     if (!statusAll[0]) return;
 
     for (let status of statusAll) {
-        const ue_found = status.innerHTML.match(user_emoji_regexp);
-        if (ue_found) {
-            const display_name_account = status.parentNode.querySelector('.display-name__account');
-            const status_display_name = status.parentNode.querySelector('.status__display-name');
-            const origin_acct = display_name_account ? display_name_account.textContent.slice(1) : status_display_name.title;
-            const domain = '@' + (origin_acct.indexOf('@') !== -1 ? origin_acct.split('@')[1] : location.hostname);
+        const display_name_account = status.parentNode.querySelector('.display-name__account');
+        const status_display_name = status.parentNode.querySelector('.status__display-name');
+        const origin_acct = display_name_account ? display_name_account.textContent.slice(1) : status_display_name.title;
+        const origin_domain = '@' + (origin_acct.indexOf('@') !== -1 ? origin_acct.split('@')[1] : location.hostname);
 
-            replaceTool(status, ue_found, domain);
-        } else {
-            replaceTool(status);
-        }
+        replaceTool(status, origin_domain);
     }
 }
 
-function replaceTool(status, ue_found, domain) {
+function replaceTool(status, domain) {
     if (status.hasChildNodes()) {
         for (let node of status.childNodes) {
-            replaceTool(node, ue_found, domain);
+            replaceTool(node, domain);
         }
     } else {
         if (status.nodeName === '#text') {
+            let is_replaced = false;
             const html = document.createElement('span');
             html.innerHTML = status.data;
 
+            html.innerHTML = html.innerHTML.replace(keyword_regexp, `<span style='color: orange'>$1</span>`)
+                .replace(shorten_regexp, `<a href="http://nico.ms/$1$2" target="_blank" rel=”nofollow”>$1$2</a>`);
+
+            if (html.innerHTML !== status.data) {
+                status.parentNode.replaceChild(html, status);
+                is_replaced = true;
+            }
+
+            const ue_found = html.innerHTML.match(user_emoji_regexp);
             if (ue_found) {
                 ue_found.forEach(async data => {
                     let acct = data.slice(2).slice(0, -1);
                     if (acct.indexOf('@') === -1) acct += domain;
 
                     const image = await getIconUrl(acct);
-                    html.innerHTML = html.innerHTML.replace(new RegExp(data, 'gm'), `<img src="${image}" class="emojione"/>`);
+                    html.innerHTML = html.innerHTML.replace(new RegExp(data, 'gm'), `<img draggable="false" class="emojione" alt=":_${acct}:" title="${acct}" src="${image}"/>`);
                 });
+
+                if (!is_replaced) {
+                    status.parentNode.replaceChild(html, status);
+                }
             }
-
-            F.regExps.forEach(regexp => {
-                html.innerHTML = html.innerHTML.replace(regexp.regexp, `<span style='color: orange'>${regexp.word}</span>`);
-            });
-            html.innerHTML = html.innerHTML.replace(shorten_regexp, `<a href="http://nico.ms/$1$2" target="_blank" rel=”nofollow”>$1$2</a>`);
-
-            if (html.innerHTML !== status.data || ue_found) status.parentNode.replaceChild(html, status);
         }
     }
 }
@@ -141,7 +145,7 @@ function openCP() {
 
 <button class="button button--block fcp-clickable" style="margin: 20px 0" data-fcp="save">設定を保存</button>
 
-<div class="h3">FriendsKit v1.2.0</div>
+<div class="h3">FriendsKit v1.2.2</div>
 <p>
 GitHub: <a href="https://github.com/yuzulabo/FriendsKit" target="_blank">yuzulabo/FriendsKit</a><br>
 Greasy Fork: <a href="https://greasyfork.org/ja/scripts/381132-friendskit" target="_blank">381132-friendskit</a>
@@ -160,8 +164,10 @@ function CPOpr(e) {
     const mode = e.target.dataset.fcp;
     if (!mode) return;
     if (mode === 'save') {
+        const keywords = Array.from(new Set(document.getElementById('friendskit-keyword').value.split(',')));
+
         const newConf = {
-            keyword: document.getElementById('friendskit-keyword').value.split(','),
+            keyword: keywords,
             fav_icon_default_force: document.getElementById('fav_icon_default_force').checked,
             fav_icon_char: document.getElementById('fav_icon_char').value,
             fav_icon: document.getElementById('fav_icon').value,
