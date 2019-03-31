@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name            FriendsKit
 // @namespace       https://github.com/yuzulabo
-// @version         1.0.3
+// @version         1.0.4
 // @description     friends.nico の独自機能を再現するユーザスクリプト
 // @author          nzws
 // @match           https://knzk.me/*
@@ -91,7 +91,7 @@ function replaceTool(status, ue_found, domain) {
             });
             html.innerHTML = html.innerHTML.replace(shorten_regexp, `<a href="http://nico.ms/$1$2" target="_blank" rel=”nofollow”>$1$2</a>`);
 
-            status.parentNode.replaceChild(html, status);
+            if (html.innerHTML !== status.data) status.parentNode.replaceChild(html, status);
         }
     }
 }
