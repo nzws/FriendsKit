@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name            FriendsKit
 // @namespace       https://github.com/yuzulabo
-// @version         1.0.4
+// @version         1.2.0
 // @description     friends.nico の独自機能を再現するユーザスクリプト
 // @author          nzws
 // @match           https://knzk.me/*
@@ -42,6 +42,14 @@ function watcher() {
     const p = location.pathname;
     if (F.path !== p) {
         runner(document.querySelector('.column:last-child'));
+
+        if (p === '/web/getting-started' && !document.querySelector('.friendskit-cp-btn')) {
+            const settingLi = document.createElement('li');
+            settingLi.innerHTML = ` · <a href="#" class="friendskit-cp-btn">FriendsKit CP</a>`;
+
+            document.querySelector('.getting-started__footer ul').appendChild(settingLi);
+            settingLi.addEventListener('click', openCP);
+        }
     }
     F.path = p;
 }
@@ -96,6 +104,104 @@ function replaceTool(status, ue_found, domain) {
     }
 }
 
+function openCP() {
+    const div = document.createElement('div');
+    div.className = 'friendskit-cp';
+    div.innerHTML = `
+<div class="close fcp-clickable" data-fcp="close"><i class="fa fa-times fa-2x" data-fcp="close"></i></div>
+<div class="h1">FriendsKit CP</div>
+
+<div class="h2">キーワードハイライト設定</div>
+カンマ(,)区切りで指定
+<textarea id="friendskit-keyword" rows="5">${F.conf.keyword.join(',')}</textarea>
+
+<div class="h2">お気に入りアイコン設定</div>
+<p>
+* アイコン設定で複数の設定がされている時、この設定で一番上の物が優先されます。
+</p>
+
+<label for="fav_icon_default_force"><input class="check_boxes" type="checkbox" id="fav_icon_default_force" ${F.conf.fav_icon_default_force ? 'checked' : ''}>強制的に星に戻す</label>
+
+文字にする (1~2文字程度):<br>
+<input id="fav_icon_char" placeholder="空欄で解除" class="input-text" value="${F.conf.fav_icon_char ? F.conf.fav_icon_char : ''}">
+
+画像にする (画像URLを指定):<br>
+<input id="fav_icon" placeholder="アクティブ(明るい方)" class="input-text" value="${F.conf.fav_icon ? F.conf.fav_icon : ''}">
+<input id="fav_icon_gray" placeholder="暗い方" class="input-text" value="${F.conf.fav_icon_gray ? F.conf.fav_icon_gray : ''}">
+
+<div class="h2">お気に入りアイコン拡大</div>
+
+<label for="no_fav_icon_big"><input class="check_boxes" type="checkbox" id="no_fav_icon_big" ${F.conf.no_fav_icon_big ? 'checked' : ''}>無効にする</label>
+
+<div class="h2">細かなやつ</div>
+<button class="button fcp-clickable" data-fcp="import-settings">設定のインポート</button>
+<button class="button fcp-clickable" data-fcp="export-settings">設定のエクスポート</button>
+<button class="button danger fcp-clickable" data-fcp="reset-settings">設定のリセット</button>
+
+<button class="button button--block fcp-clickable" style="margin: 20px 0" data-fcp="save">設定を保存</button>
+
+<div class="h3">FriendsKit v1.2.0</div>
+<p>
+GitHub: <a href="https://github.com/yuzulabo/FriendsKit" target="_blank">yuzulabo/FriendsKit</a><br>
+Greasy Fork: <a href="https://greasyfork.org/ja/scripts/381132-friendskit" target="_blank">381132-friendskit</a>
+</p>
+`;
+    document.body.appendChild(div);
+    document.querySelector('.app-holder').classList.add('friendskit-disable');
+
+    const btns = document.querySelectorAll(".fcp-clickable");
+    for (let btn of btns) {
+        btn.addEventListener('click', (e) => CPOpr(e));
+    }
+}
+
+function CPOpr(e) {
+    const mode = e.target.dataset.fcp;
+    if (!mode) return;
+    if (mode === 'save') {
+        const newConf = {
+            keyword: document.getElementById('friendskit-keyword').value.split(','),
+            fav_icon_default_force: document.getElementById('fav_icon_default_force').checked,
+            fav_icon_char: document.getElementById('fav_icon_char').value,
+            fav_icon: document.getElementById('fav_icon').value,
+            fav_icon_gray: document.getElementById('fav_icon_gray').value,
+            no_fav_icon_big: document.getElementById('no_fav_icon_big').checked,
+        };
+        Object.assign(F.conf, newConf);
+        save();
+
+        alert('保存しました。再読み込みします...');
+        location.reload();
+    } else if (mode === 'close') {
+        if (!confirm('変更は破棄されますがよろしいですか？')) return;
+
+        const element = document.querySelector('.friendskit-cp');
+        element.parentNode.removeChild(element);
+        document.querySelector('.app-holder').classList.remove('friendskit-disable');
+    } else if (mode === 'import-settings') {
+        const code = prompt('エクスポート時に出力したコードを入力してください:');
+        if (!code) return;
+
+        if (friendskit.importSettings(code)) {
+            alert('インポートしました。再読み込みします...');
+            location.reload();
+        } else {
+            alert('このコードは壊れています。インポートできません。');
+        }
+    } else if (mode === 'export-settings') {
+        friendskit.exportSettings('CP');
+        alert('設定のエクスポートをクリップボードにコピーしました。');
+    } else if (mode === 'reset-settings') {
+        if (!confirm('設定をリセットします！よろしいですか？')) return;
+        if (!confirm('まじで？')) return;
+        if (!confirm('まじか...')) return;
+
+        if (friendskit.resetSettings()) {
+            location.reload();
+        }
+    }
+}
+
 const friendskit = {
     keyword: {
         add: (word) => {
@@ -134,9 +240,13 @@ const friendskit = {
         save();
         console.log('[FriendsKit]', 'Done✨');
     },
-    exportSettings: () => {
-        GM_setClipboard('friendskit.importSettings(`' + localStorage.friendskit + '`)');
-        console.log('[FriendsKit]', 'Done✨\nクリップボードにコピーしたコードをインポートしたいページの Console にそのまま打ち込んでください。');
+    exportSettings: (type) => {
+        if (type === 'CP') {
+            GM_setClipboard(localStorage.friendskit);
+        } else {
+            GM_setClipboard('friendskit.importSettings(`' + localStorage.friendskit + '`)');
+            console.log('[FriendsKit]', 'Done✨\nクリップボードにコピーしたコードをインポートしたいページの Console にそのまま打ち込んでください。');
+        }
     },
     resetSettings: () => {
         delete localStorage.friendskit;
@@ -147,10 +257,11 @@ const friendskit = {
             JSON.parse(data);
         } catch(e) {
             console.warn('[FriendsKit]', 'このデータは壊れています', e);
-            return;
+            return false;
         }
         localStorage.friendskit = data;
         console.log('[FriendsKit]', 'Done✨');
+        return true;
     }
 };
 exportFunction(friendskit, unsafeWindow, {defineAs: 'friendskit' });
@@ -226,9 +337,78 @@ if (!mainElem) return;
 
 observer.observe(mainElem, { childList: true, subtree: true });
 
-let css = ``;
+let css = `
+.friendskit-cp {
+position: fixed;
+top: 50%;
+left: 50%;
+transform: translate(-50%, -50%);
+background: #e6ebf0;
+color: #000;
+padding: 20px;
+border-radius: 5px;
+min-width: 55%;
+max-width: 95%;
+min-height: 50%;
+max-height: 65%;
+overflow-y: scroll;
+}
+
+.friendskit-disable {
+filter: blur(4px);
+pointer-events: none;
+}
+
+.friendskit-cp textarea, .friendskit-cp .input-text, .friendskit-cp label {
+display: block;
+width: 100%;
+margin: 10px 0;
+}
+
+.fcp-clickable {
+cursor: pointer;
+}
+
+.h1 {
+font-size: 2.4rem;
+}
+
+.h2 {
+font-size: 1.7rem;
+}
+
+.h3 {
+font-size: 1.3rem;
+}
+
+.h1, .h2, .h3 {
+margin: 1rem 0;
+padding-bottom: 0.3rem;
+font-weight: 500;
+line-height: 1.2;
+border-bottom: 1px solid #c0cdd9;
+}
+
+.close {
+float: right;
+color: #000;
+text-shadow: 0 1px 0 #fff;
+opacity: .5;
+}
+
+.button.danger {
+background: #df405a;
+}
+`;
 
 window.onload = async () => {
+    setInterval(watcher, 1000);
+
+    document.querySelector('.compose-form__publish-button-wrapper button').addEventListener('click', at_pizza, false);
+    document.querySelector('.autosuggest-textarea__textarea').onkeydown = (e) => {
+        if (e.keyCode === 13 && (e.ctrlKey || e.metaKey)) at_pizza();
+    };
+
     if (!F.conf.fav_icon_default_force) {
         const i = F.conf.fav_icon ? await getImage(F.conf.fav_icon) : 'https://media.knzk.me/media_attachments/files/004/510/885/original/caf4ce0b3e7bd6d3.png';
         const ig = F.conf.fav_icon_gray ? await getImage(F.conf.fav_icon_gray) : 'https://media.knzk.me/media_attachments/files/004/510/887/original/bfb5e4222a3423fd.png';
@@ -289,10 +469,4 @@ font-size: 2em;
     }
 
     GM_addStyle(css);
-    setInterval(watcher, 1000);
-
-    document.querySelector('.compose-form__publish-button-wrapper button').addEventListener('click', at_pizza, false);
-    document.querySelector('.autosuggest-textarea__textarea').onkeydown = (e) => {
-        if (e.keyCode === 13 && (e.ctrlKey || e.metaKey)) at_pizza();
-    };
 };
