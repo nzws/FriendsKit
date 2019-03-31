@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name            FriendsKit
 // @namespace       https://github.com/yuzulabo
-// @version         1.0.2
+// @version         1.0.3
 // @description     friends.nico の独自機能を再現するユーザスクリプト
 // @author          nzws
 // @match           https://knzk.me/*
@@ -34,35 +34,37 @@ F.conf.keyword.forEach(word => {
 
 const observer = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
-        mutation.addedNodes.forEach(async node => {
-            if (!node.tagName) return;
-            const status = node.querySelector('.status__content');
-            if (!status) return;
-
-            const ue_found = status.innerHTML.match(user_emoji_regexp);
-            if (ue_found) {
-                let domain = '';
-
-                const status_display_name = node.querySelector('.status__display-name');
-                if (status_display_name) {
-                    const origin_acct = status_display_name.title;
-                    if (origin_acct.indexOf('@') !== -1) {
-                        domain = '@' + origin_acct.split('@')[1];
-                    } else {
-                        domain = '@' + location.hostname;
-                    }
-                } else {
-                    const origin_acct = node.querySelector('.display-name__account').textContent.slice(1);
-                    domain = '@' + origin_acct.split('@')[1];
-                }
-
-                replaceTool(status, ue_found, domain);
-            } else {
-                replaceTool(status);
-            }
-        });
+        mutation.addedNodes.forEach(node => runner(node));
     });
 });
+
+function watcher() {
+    const p = location.pathname;
+    if (F.path !== p) {
+        runner(document.querySelector('.column:last-child'));
+    }
+    F.path = p;
+}
+
+function runner(node) {
+    if (!node.tagName) return;
+    const statusAll = node.querySelectorAll('.status__content');
+    if (!statusAll[0]) return;
+
+    for (let status of statusAll) {
+        const ue_found = status.innerHTML.match(user_emoji_regexp);
+        if (ue_found) {
+            const display_name_account = status.parentNode.querySelector('.display-name__account');
+            const status_display_name = status.parentNode.querySelector('.status__display-name');
+            const origin_acct = display_name_account ? display_name_account.textContent.slice(1) : status_display_name.title;
+            const domain = '@' + (origin_acct.indexOf('@') !== -1 ? origin_acct.split('@')[1] : location.hostname);
+
+            replaceTool(status, ue_found, domain);
+        } else {
+            replaceTool(status);
+        }
+    }
+}
 
 function replaceTool(status, ue_found, domain) {
     if (status.hasChildNodes()) {
@@ -190,7 +192,7 @@ async function getIconUrl(acct) {
                 }
 
                 if (response.response.error) {
-                    console.warn('[FriendsKit]', response.response.error);
+                    console.warn('[FriendsKit]', response.response.error, acct);
                     return;
                 }
 
@@ -287,6 +289,7 @@ font-size: 2em;
     }
 
     GM_addStyle(css);
+    setInterval(watcher, 1000);
 
     document.querySelector('.compose-form__publish-button-wrapper button').addEventListener('click', at_pizza, false);
     document.querySelector('.autosuggest-textarea__textarea').onkeydown = (e) => {
