@@ -8,6 +8,7 @@
 // @grant           GM_addStyle
 // @grant           GM_setClipboard
 // @grant           GM_xmlhttpRequest
+// @grant           GM_notification
 // @grant           unsafeWindow
 // @connect         friendskit.nzws.me
 // @connect         media.knzk.me
@@ -53,13 +54,6 @@ function watcher() {
 
             document.querySelector('.getting-started__footer ul').appendChild(settingLi);
             settingLi.addEventListener('click', openCP);
-
-            if (localStorage.friendskit_version !== version) {
-                const updateLi = document.createElement('li');
-                updateLi.innerHTML = ` · <a href="https://github.com/yuzulabo/FriendsKit/releases" target="_blank" style="color:orange">FriendsKitをアップデートしました (クリックしてリリースノートを見る)</a>`;
-                document.querySelector('.getting-started__footer ul').appendChild(updateLi);
-            }
-            localStorage.friendskit_version = version;
         }
     }
     F.path = p;
@@ -503,4 +497,15 @@ font-size: 2em;
     GM_addStyle(css);
 
     console.log(`%c..: FriendsKit v${version} :..`, '    background: black;font-size: large;color: orange');
+    if (localStorage.friendskit_version !== version) {
+        GM_notification({
+            title: `FriendsKit v${version}にアップデートしました。`,
+            text: `クリックしてリリースノート(更新履歴)を表示`,
+            highlight: true,
+            onclick: () => {
+                window.open('https://github.com/yuzulabo/FriendsKit/releases');
+            }
+        });
+    }
+    localStorage.friendskit_version = version;
 };
