@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name            FriendsKit
 // @namespace       https://github.com/yuzulabo
-// @version         1.2.2
+// @version         1.2.3
 // @description     friends.nico の独自機能を再現するユーザスクリプト
 // @author          nzws
 // @match           https://knzk.me/*
@@ -14,6 +14,7 @@
 // @require         https://unpkg.com/blob-util/dist/blob-util.min.js
 // ==/UserScript==
 
+const version = '1.2.3';
 const s = localStorage.friendskit;
 const F = {
     conf: s ? JSON.parse(s) : {
@@ -78,34 +79,47 @@ function replaceTool(status, domain) {
             replaceTool(node, domain);
         }
     } else {
-        if (status.nodeName === '#text') {
-            let is_replaced = false;
-            const html = document.createElement('span');
-            html.innerHTML = status.data;
+        if (status.nodeName !== '#text') return;
 
-            html.innerHTML = html.innerHTML.replace(keyword_regexp, `<span style='color: orange'>$1</span>`)
-                .replace(shorten_regexp, `<a href="http://nico.ms/$1$2" target="_blank" rel=”nofollow”>$1$2</a>`);
+        let is_replaced = false;
+        const html = document.createElement('span');
+        html.innerHTML = status.data;
 
-            if (html.innerHTML !== status.data) {
+        html.innerHTML = html.innerHTML.replace(keyword_regexp, `<span style='color: orange'>$1</span>`);
+
+        if (!findParentByTagName(status, 'A')) {
+            html.innerHTML = html.innerHTML.replace(shorten_regexp, `<a href="http://nico.ms/$1$2" target="_blank" rel=”nofollow”>$1$2</a>`);
+        }
+
+        if (html.innerHTML !== status.data) {
+            status.parentNode.replaceChild(html, status);
+            is_replaced = true;
+        }
+
+        const ue_found = html.innerHTML.match(user_emoji_regexp);
+        if (ue_found) {
+            ue_found.forEach(async data => {
+                let acct = data.slice(2).slice(0, -1);
+                if (acct.indexOf('@') === -1) acct += domain;
+
+                const image = await getIconUrl(acct);
+                html.innerHTML = html.innerHTML.replace(new RegExp(data, 'gm'), `<img draggable="false" class="emojione" alt=":_${acct}:" title="${acct}" src="${image}"/>`);
+            });
+
+            if (!is_replaced) {
                 status.parentNode.replaceChild(html, status);
-                is_replaced = true;
-            }
-
-            const ue_found = html.innerHTML.match(user_emoji_regexp);
-            if (ue_found) {
-                ue_found.forEach(async data => {
-                    let acct = data.slice(2).slice(0, -1);
-                    if (acct.indexOf('@') === -1) acct += domain;
-
-                    const image = await getIconUrl(acct);
-                    html.innerHTML = html.innerHTML.replace(new RegExp(data, 'gm'), `<img draggable="false" class="emojione" alt=":_${acct}:" title="${acct}" src="${image}"/>`);
-                });
-
-                if (!is_replaced) {
-                    status.parentNode.replaceChild(html, status);
-                }
             }
         }
+    }
+}
+
+function findParentByTagName(element, tagName, max = 3) {
+    if (max < 1 || element.tagName === tagName) {
+        return element.tagName === tagName;
+    } else if (element.parentNode) {
+        return findParentByTagName(element.parentNode, tagName, max - 1);
+    } else {
+        return false;
     }
 }
 
@@ -145,7 +159,7 @@ function openCP() {
 
 <button class="button button--block fcp-clickable" style="margin: 20px 0" data-fcp="save">設定を保存</button>
 
-<div class="h3">FriendsKit v1.2.2</div>
+<div class="h3">FriendsKit v${version}</div>
 <p>
 GitHub: <a href="https://github.com/yuzulabo/FriendsKit" target="_blank">yuzulabo/FriendsKit</a><br>
 Greasy Fork: <a href="https://greasyfork.org/ja/scripts/381132-friendskit" target="_blank">381132-friendskit</a>
@@ -476,4 +490,6 @@ font-size: 2em;
     }
 
     GM_addStyle(css);
+
+    console.log(`%c..: FriendsKit v${version} :..`, '    background: black;font-size: large;color: orange');
 };
