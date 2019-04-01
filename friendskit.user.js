@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name            FriendsKit
 // @namespace       https://github.com/yuzulabo
-// @version         1.2.3
+// @version         1.2.4
 // @description     friends.nico の独自機能を再現するユーザスクリプト
 // @author          nzws
 // @match           https://knzk.me/*
@@ -14,7 +14,7 @@
 // @require         https://unpkg.com/blob-util/dist/blob-util.min.js
 // ==/UserScript==
 
-const version = '1.2.3';
+const version = '1.2.4';
 const s = localStorage.friendskit;
 const F = {
     conf: s ? JSON.parse(s) : {
@@ -49,10 +49,17 @@ function watcher() {
 
         if (p === '/web/getting-started' && !document.querySelector('.friendskit-cp-btn')) {
             const settingLi = document.createElement('li');
-            settingLi.innerHTML = ` · <a href="#" class="friendskit-cp-btn">FriendsKit CP</a>`;
+            settingLi.innerHTML = ` · <a href="#" class="friendskit-cp-btn">FriendsKit CP (v${version})</a>`;
 
             document.querySelector('.getting-started__footer ul').appendChild(settingLi);
             settingLi.addEventListener('click', openCP);
+
+            if (localStorage.friendskit_version !== version) {
+                const updateLi = document.createElement('li');
+                updateLi.innerHTML = ` · <a href="https://github.com/yuzulabo/FriendsKit/releases" target="_blank" style="color:orange">FriendsKitをアップデートしました (クリックしてリリースノートを見る)</a>`;
+                document.querySelector('.getting-started__footer ul').appendChild(updateLi);
+            }
+            localStorage.friendskit_version = version;
         }
     }
     F.path = p;
@@ -161,6 +168,10 @@ function openCP() {
 
 <div class="h3">FriendsKit v${version}</div>
 <p>
+<a href="https://github.com/yuzulabo/FriendsKit/releases" target="_blank">リリースノート(更新履歴) を見る</a>
+</p>
+
+<p style="margin-top: 5px">
 GitHub: <a href="https://github.com/yuzulabo/FriendsKit" target="_blank">yuzulabo/FriendsKit</a><br>
 Greasy Fork: <a href="https://greasyfork.org/ja/scripts/381132-friendskit" target="_blank">381132-friendskit</a>
 </p>
