@@ -49,6 +49,11 @@ https://greasyfork.org/ja/scripts/381132-friendskit
 
 また、2つめの理由としてはデフォルトの補助サーバ(friendskit.nzws.me)が Knzk.me に依存しているためです。
 
+#### 設定ミスって動かなくなった！
+
+画像URLを適当に設定してしまうとロード時に画像読み込みでコケてロードされなくなってしまうようです。  
+応急処置として、DevToolsから `friendskit.resetSettings();` コマンドを使用して設定をリセットしてください。
+
 ## ライセンス
 
 MPL-2.0
