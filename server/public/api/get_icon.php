@@ -24,7 +24,7 @@ if (empty($row[0]) || (time() - strtotime($row[0]["updated_at"])) > 60 * 60 * 24
     if (empty($id_s["accounts"][0])) api_json(["error" => "ユーザーがわからん (出てこない)"]);
     $id_s = $id_s["accounts"][0];
 
-    if ($id_s["acct"] === $id_s["username"]) $id_s["acct"] = $id_s["acct"] . "@" . $env["mastodon"]["domain"];
+    if ($id_s["acct"] === $id_s["username"]) $id_s["acct"] = $id_s["acct"] . "@" . $domain;
     if (mb_strtolower($acct) !== mb_strtolower($id_s["acct"])) api_json(["error" => "アカウント違うくない？"]);
 
     $id = $id_s["id"];
