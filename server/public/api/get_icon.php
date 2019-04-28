@@ -9,8 +9,8 @@ $domain = isset($_GET["domain"]) ? $_GET["domain"] : $env["default"];
 if (empty($env["servers"][$domain])) api_json(["error" => "このサーバ対応してないよ"]);
 
 $mysqli = db_start();
-$stmt = $mysqli->prepare("SELECT * FROM `icon_${$domain}` WHERE acct = ?;");
-$stmt->bind_param("s", $acct);
+$stmt = $mysqli->prepare("SELECT * FROM `get_icon` WHERE acct = ? AND domain = ?;");
+$stmt->bind_param("ss", $acct, $domain);
 $stmt->execute();
 $row = db_fetch_all($stmt);
 $stmt->close();
@@ -18,7 +18,7 @@ $mysqli->close();
 
 if (empty($row[0]) || (time() - strtotime($row[0]["updated_at"])) > 60 * 60 * 24 * 2) {
   if (empty($row[0])) { // 初めてとる
-    $id_s = api("/api/v2/search?q=" . $acct);
+    $id_s = api("/api/v2/search?q=" . $acct, $domain);
     if (empty($id_s)) api_json(["error" => "ユーザーがわからん (search)"]);
     $id_s = json_decode($id_s, true);
     if (empty($id_s["accounts"][0])) api_json(["error" => "ユーザーがわからん (出てこない)"]);
@@ -30,16 +30,16 @@ if (empty($row[0]) || (time() - strtotime($row[0]["updated_at"])) > 60 * 60 * 24
     $id = $id_s["id"];
   } else {
     $id = $row[0]["id"];
-    $id_s = api("/api/v1/accounts/" . $id);
+    $id_s = api("/api/v1/accounts/" . $id, $domain);
     if (empty($id_s)) api_json(["error" => "ユーザーがわからん (accounts)"]);
     $id_s = json_decode($id_s, true);
   }
   if (empty($id_s["avatar"]) || empty($id_s["avatar_static"])) api_json(["error" => "アバターが出てこない"]);
 
   $mysqli = db_start();
-  $stmt = $mysqli->prepare("INSERT INTO `icon_${$domain}` (id, acct, avatar, avatar_static) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE avatar = ?, avatar_static = ?, updated_at = CURRENT_TIMESTAMP;");
+  $stmt = $mysqli->prepare("INSERT INTO `get_icon` (id, acct, avatar, avatar_static, domain) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE avatar = ?, avatar_static = ?, updated_at = CURRENT_TIMESTAMP;");
 
-  $stmt->bind_param("ssssss", $id, $acct, $id_s["avatar"], $id_s["avatar_static"], $id_s["avatar"], $id_s["avatar_static"]);
+  $stmt->bind_param("sssssss", $id, $acct, $id_s["avatar"], $id_s["avatar_static"], $domain, $id_s["avatar"], $id_s["avatar_static"]);
   $stmt->execute();
   $stmt->close();
   $mysqli->close();
@@ -51,11 +51,11 @@ if (empty($row[0]) || (time() - strtotime($row[0]["updated_at"])) > 60 * 60 * 24
 
 api_json(["url" => $url]);
 
-function api($url) {
+function api($url, $domain) {
   global $env;
 
   $header = [
-    'Authorization: Bearer ' . $env["mastodon"]["token"],
+    'Authorization: Bearer ' . $env["servers"][$domain],
     'Content-Type: application/json'
   ];
   $options = ['http' => [
@@ -63,5 +63,5 @@ function api($url) {
     'header' => implode(PHP_EOL, $header)
   ]];
   $options = stream_context_create($options);
-  return file_get_contents("https://" . $env["mastodon"]["domain"] . $url, false, $options);
+  return file_get_contents("https://" . $env["servers"][$domain] . $url, false, $options);
 }
