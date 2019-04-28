@@ -5,15 +5,18 @@ if (empty($_GET["acct"])) api_json(["error" => "ユーザID入れてくれ〜"])
 $acct = $_GET["acct"];
 if (!filter_var($acct, FILTER_VALIDATE_EMAIL)) api_json(["error" => "ユーザIDじゃなくない？"]);
 
+$domain = isset($_GET["domain"]) ? $_GET["domain"] : $env["default"];
+if (empty($env["servers"][$domain])) api_json(["error" => "このサーバ対応してないよ"]);
+
 $mysqli = db_start();
-$stmt = $mysqli->prepare("SELECT * FROM `get_icon` WHERE acct = ?;");
+$stmt = $mysqli->prepare("SELECT * FROM `icon_${$domain}` WHERE acct = ?;");
 $stmt->bind_param("s", $acct);
 $stmt->execute();
 $row = db_fetch_all($stmt);
 $stmt->close();
 $mysqli->close();
 
-if (empty($row[0]) || (time() - strtotime($row[0]["updated_at"])) > 60 * 60 * 24) {
+if (empty($row[0]) || (time() - strtotime($row[0]["updated_at"])) > 60 * 60 * 24 * 2) {
   if (empty($row[0])) { // 初めてとる
     $id_s = api("/api/v2/search?q=" . $acct);
     if (empty($id_s)) api_json(["error" => "ユーザーがわからん (search)"]);
@@ -27,21 +30,21 @@ if (empty($row[0]) || (time() - strtotime($row[0]["updated_at"])) > 60 * 60 * 24
     $id = $id_s["id"];
   } else {
     $id = $row[0]["id"];
+    $id_s = api("/api/v1/accounts/" . $id);
+    if (empty($id_s)) api_json(["error" => "ユーザーがわからん (accounts)"]);
+    $id_s = json_decode($id_s, true);
   }
-  $acct_s = api("/api/v1/accounts/" . $id);
-  if (empty($acct_s)) api_json(["error" => "ユーザーがわからん (accounts)"]);
-  $acct_s = json_decode($acct_s, true);
-  if (empty($acct_s["avatar"]) || empty($acct_s["avatar_static"])) api_json(["error" => "アバターが出てこない"]);
+  if (empty($id_s["avatar"]) || empty($id_s["avatar_static"])) api_json(["error" => "アバターが出てこない"]);
 
   $mysqli = db_start();
-  $stmt = $mysqli->prepare("INSERT INTO `get_icon` (id, acct, avatar, avatar_static) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE avatar = ?, avatar_static = ?, updated_at = CURRENT_TIMESTAMP;");
+  $stmt = $mysqli->prepare("INSERT INTO `icon_${$domain}` (id, acct, avatar, avatar_static) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE avatar = ?, avatar_static = ?, updated_at = CURRENT_TIMESTAMP;");
 
-  $stmt->bind_param("ssssss", $id, $acct, $acct_s["avatar"], $acct_s["avatar_static"], $acct_s["avatar"], $acct_s["avatar_static"]);
+  $stmt->bind_param("ssssss", $id, $acct, $id_s["avatar"], $id_s["avatar_static"], $id_s["avatar"], $id_s["avatar_static"]);
   $stmt->execute();
   $stmt->close();
   $mysqli->close();
 
-  $url = $acct_s["avatar"];
+  $url = $id_s["avatar"];
 } else {
   $url = $row[0]["avatar"];
 }

@@ -2,7 +2,7 @@
 
 friends.nico の独自機能を再現するユーザスクリプトです。
 
-[Knzk.me](https://knzk.me/) に対応しています。
+[Knzk.me](https://knzk.me/), [best-friends.chat](https://best-friends.chat/) に対応しています。
 
 - [x] お気に入りアイコン変更
 - [x] お気に入りアイコン拡大モード
@@ -30,6 +30,8 @@ https://greasyfork.org/ja/scripts/381132-friendskit
 
 :_(ユーザーID): で入力してください (`@` ではなく `_` なのはメンションしてしまう為です)
 
+> 例 :_nzws: :_nzws@knzk.me:
+
 #### 設定
 
 `getting-started` に行くと、下の方に小さく `FriendsKit CP` というのが増えているのでクリックすると設定画面が開けます。
@@ -41,13 +43,6 @@ https://greasyfork.org/ja/scripts/381132-friendskit
 #### 〇〇の機能が実装されてない, 動かない！
 
 [y@knzk.me](https://knzk.me/@y) までどうぞ
-
-#### Knzk.me でしか使用できないのはなぜ？
-
-1つめの理由として、ユーザースクリプトはいわば非公式改造みたいなものなので適用してるサイトがアップデートされると高確率で動かなくなります。(Mastodonで言えば、バージョンが違うと動きません)   
-そのため、サポートできる範囲を絞るために1つのインスタンスに制限しています。
-
-また、2つめの理由としてはデフォルトの補助サーバ(friendskit.nzws.me)が Knzk.me に依存しているためです。
 
 ## ライセンス
 

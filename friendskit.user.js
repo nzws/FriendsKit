@@ -1,10 +1,11 @@
 // ==UserScript==
 // @name            FriendsKit
 // @namespace       https://github.com/yuzulabo
-// @version         1.2.4
+// @version         1.3.0
 // @description     friends.nico の独自機能を再現するユーザスクリプト
 // @author          nzws
 // @match           https://knzk.me/*
+// @match           https://best-friends.chat/*
 // @grant           GM_addStyle
 // @grant           GM_setClipboard
 // @grant           GM_xmlhttpRequest
@@ -12,10 +13,11 @@
 // @grant           unsafeWindow
 // @connect         friendskit.nzws.me
 // @connect         media.knzk.me
+// @connect         media.best-friends.chat
 // @require         https://unpkg.com/blob-util/dist/blob-util.min.js
 // ==/UserScript==
 
-const version = '1.2.4';
+const version = '1.3.0';
 const s = localStorage.friendskit;
 const F = {
     conf: s ? JSON.parse(s) : {
@@ -317,7 +319,7 @@ async function getIconUrl(acct) {
         GM_xmlhttpRequest({
             method: 'POST',
             responseType: 'json',
-            url: api + 'get_icon.php?acct=' + acct,
+            url: api + 'get_icon.php?acct=' + acct + '&domain=' + location.hostname,
             onerror: () => {
                 console.warn('[FriendsKit]', 'json取得に失敗', acct);
                 return;
@@ -436,8 +438,8 @@ window.onload = async () => {
     };
 
     if (!F.conf.fav_icon_default_force) {
-        const i = F.conf.fav_icon ? await getImage(F.conf.fav_icon) : 'https://media.knzk.me/media_attachments/files/004/510/885/original/caf4ce0b3e7bd6d3.png';
-        const ig = F.conf.fav_icon_gray ? await getImage(F.conf.fav_icon_gray) : 'https://media.knzk.me/media_attachments/files/004/510/887/original/bfb5e4222a3423fd.png';
+        const i = await getImage(F.conf.fav_icon ? F.conf.fav_icon : 'https://i.imgur.com/iZQJgSW.png');
+        const ig = await getImage(F.conf.fav_icon_gray ? F.conf.fav_icon_gray : 'https://i.imgur.com/ninYNIi.png');
 
         const char = F.conf.fav_icon_char ? F.conf.fav_icon_char : null;
 

@@ -8,5 +8,8 @@ $env["database"]["pass"] = "Password";
 $env["is_testing"] = false;
 $env["is_maintenance"] = false;
 
-$env["mastodon"]["domain"] = "knzk.me";
-$env["mastodon"]["token"] = "token";
+$env["default"] = "knzk.me";
+
+$env["servers"] = [
+  "knzk.me" => "token"
+];
