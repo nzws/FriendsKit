@@ -63,5 +63,5 @@ function api($url, $domain) {
     'header' => implode(PHP_EOL, $header)
   ]];
   $options = stream_context_create($options);
-  return file_get_contents("https://" . $env["servers"][$domain] . $url, false, $options);
+  return file_get_contents("https://" . $domain . $url, false, $options);
 }
