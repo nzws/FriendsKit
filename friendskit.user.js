@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name            FriendsKit
 // @namespace       https://github.com/yuzulabo
-// @version         1.3.0
+// @version         1.3.1
 // @description     friends.nico の独自機能を再現するユーザスクリプト
 // @author          nzws
 // @match           https://knzk.me/*
@@ -17,7 +17,7 @@
 // @require         https://unpkg.com/blob-util/dist/blob-util.min.js
 // ==/UserScript==
 
-const version = '1.3.0';
+const version = '1.3.1';
 const s = localStorage.friendskit;
 const F = {
     conf: s ? JSON.parse(s) : {
@@ -88,7 +88,9 @@ function replaceTool(status, domain) {
         const html = document.createElement('span');
         html.innerHTML = status.data;
 
-        html.innerHTML = html.innerHTML.replace(keyword_regexp, `<span style='color: orange'>$1</span>`);
+        if (F.conf.keyword.length > 0) {
+            html.innerHTML = html.innerHTML.replace(keyword_regexp, `<span style='color: orange'>$1</span>`);
+        }
 
         if (!findParentByTagName(status, 'A')) {
             html.innerHTML = html.innerHTML.replace(shorten_regexp, `<a href="http://nico.ms/$1$2" target="_blank" rel=”nofollow”>$1$2</a>`);
@@ -185,7 +187,8 @@ function CPOpr(e) {
     const mode = e.target.dataset.fcp;
     if (!mode) return;
     if (mode === 'save') {
-        const keywords = Array.from(new Set(document.getElementById('friendskit-keyword').value.split(',')));
+        const keyword = document.getElementById('friendskit-keyword').value;
+        const keywords = keyword ? Array.from(new Set(keyword.split(','))) : [];
 
         const newConf = {
             keyword: keywords,
