@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name            FriendsKit
 // @namespace       https://github.com/yuzulabo
-// @version         1.3.1
+// @version         1.3.2
 // @description     friends.nico の独自機能を再現するユーザスクリプト
 // @author          nzws
 // @match           https://knzk.me/*
@@ -17,7 +17,7 @@
 // @require         https://unpkg.com/blob-util/dist/blob-util.min.js
 // ==/UserScript==
 
-const version = '1.3.1';
+const version = '1.3.2';
 const s = localStorage.friendskit;
 const F = {
     conf: s ? JSON.parse(s) : {
@@ -28,7 +28,8 @@ const F = {
 };
 const api = F.conf.api_server ? F.conf.api_server : 'https://friendskit.nzws.me/api/';
 const user_emoji_regexp = new RegExp(':(_|@)([A-Za-z0-9_@.]+):', 'gm');
-const shorten_regexp = new RegExp('(sm|nm|im|sg|mg|bk|lv|co|ch|ar|ap|jk|nw|l\/|dic\/|user\/|mylist\/)([0-9]+)', 'gm');
+const nico_ms_shorten_regexp = new RegExp('(sm|nm|im|sg|mg|bk|lv|co|ch|ar|ap|jk|nw|so|l\/|dic\/|user\/|mylist\/)([0-9]+)', 'gmi');
+const nico_ms_watch_regexp = new RegExp('(watch\/)([0-9]+)', 'gmi');
 
 const keyword_escaped = [];
 F.conf.keyword.forEach(value => {
@@ -88,12 +89,13 @@ function replaceTool(status, domain) {
         const html = document.createElement('span');
         html.innerHTML = status.data;
 
-        if (F.conf.keyword.length > 0) {
+        if (F.conf.keyword.length > 0 && F.conf.keyword[0]) {
             html.innerHTML = html.innerHTML.replace(keyword_regexp, `<span style='color: orange'>$1</span>`);
         }
 
         if (!findParentByTagName(status, 'A')) {
-            html.innerHTML = html.innerHTML.replace(shorten_regexp, `<a href="http://nico.ms/$1$2" target="_blank" rel=”nofollow”>$1$2</a>`);
+            html.innerHTML = html.innerHTML.replace(nico_ms_shorten_regexp, `<a href="http://nico.ms/$1$2" target="_blank" rel=”nofollow”>$1$2</a>`)
+            .replace(nico_ms_watch_regexp, `<a href="http://nico.ms/$2" target="_blank" rel=”nofollow”>$1$2</a>`);
         }
 
         if (html.innerHTML !== status.data) {
